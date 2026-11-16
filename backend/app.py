@@ -29,8 +29,6 @@ CORS(app)
 
 OPENCHARGEMAP_API_KEY = os.getenv("OPENCHARGEMAP_API_KEY")
 
-print("API key loaded:", bool(OPENCHARGEMAP_API_KEY))
-
 
 # --------------------------------------------------
 # 4. Geocoding cache and request control
@@ -688,4 +686,5 @@ def get_nearby_places():
 # --------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
