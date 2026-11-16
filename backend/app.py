@@ -417,15 +417,18 @@ def get_chargers_along_route():
         }), 502
 
 
+
 # --------------------------------------------------
-# 10. NEARBY FOOD AND SHOPPING PLACES
+# 10. NEARBY CAFES
 # --------------------------------------------------
 
 @app.route("/api/nearby-places", methods=["POST"])
 def get_nearby_places():
 
-    data = request.get_json(silent=True) or {}
+    import os
+    from math import radians, sin, cos, sqrt, atan2
 
+    data = request.get_json(silent=True) or {}
     locations = data.get("locations", [])
 
     if not isinstance(locations, list):
@@ -434,21 +437,12 @@ def get_nearby_places():
             "message": "Locations must be provided as a list."
         }), 400
 
-    # Limit request size
-    locations = locations[:5]
+    # Search around the first charging station only
+    locations = locations[:1]
 
-    if not locations:
-        return jsonify({
-            "status": "success",
-            "count": 0,
-            "places": []
-        })
-
-    # Validate every coordinate
     valid_locations = []
 
     for location in locations:
-
         try:
             latitude = float(location["latitude"])
             longitude = float(location["longitude"])
@@ -474,212 +468,181 @@ def get_nearby_places():
             "places": []
         })
 
-    # Build one Overpass query for all selected charging stations.
-    # Search within 1.5 km of each selected charger.
-    query_parts = []
+    # Get Geoapify API key securely from environment
+    geoapify_api_key = os.getenv("GEOAPIFY_API_KEY")
 
-    for location in valid_locations:
+    if not geoapify_api_key:
+        return jsonify({
+            "status": "error",
+            "message": "Places API key is not configured."
+        }), 503
 
-        latitude = location["latitude"]
-        longitude = location["longitude"]
+    # Use the first charging station as search centre
+    charger = valid_locations[0]
 
-        around = f"around:1500,{latitude},{longitude}"
+    latitude = charger["latitude"]
+    longitude = charger["longitude"]
 
-        query_parts.append(
-            f'node({around})["amenity"~"restaurant|cafe|fast_food"];'
-        )
-
-        query_parts.append(
-            f'way({around})["amenity"~"restaurant|cafe|fast_food"];'
-        )
-
-        query_parts.append(
-            f'node({around})["shop"~"supermarket|mall|convenience"];'
-        )
-
-        query_parts.append(
-            f'way({around})["shop"~"supermarket|mall|convenience"];'
-        )
-
-    overpass_query = (
-        "[out:json][timeout:40];"
-        "(" + "".join(query_parts) + ");"
-        "out center tags;"
-    )
-
-    url = "https://overpass-api.de/api/interpreter"
+    # Geoapify requires longitude first, then latitude
+    params = {
+        "categories": "catering.cafe",
+        "filter": f"circle:{longitude},{latitude},300",
+        "bias": f"proximity:{longitude},{latitude}",
+        "limit": 20,
+        "lang": "en"
+    }
 
     try:
+        print("Searching nearby cafes using Geoapify...")
 
-        response = requests.post(
-            url,
-            data={"data": overpass_query},
+        response = requests.get(
+            "https://api.geoapify.com/v2/places",
+            params=params,
             headers={
-                "User-Agent": "Voltway-MCA-Project/1.0",
-                "Accept": "application/json"
+                "x-api-key": geoapify_api_key
             },
-            timeout=50
+            timeout=(10, 30)
         )
 
         response.raise_for_status()
 
         result_data = response.json()
 
-        elements = result_data.get("elements", [])
+        if not isinstance(result_data, dict):
+            raise ValueError("Invalid Geoapify response.")
 
-        places = []
-        seen_ids = set()
+        features = result_data.get("features", [])
 
-        for element in elements:
+        if not isinstance(features, list):
+            raise ValueError("Invalid places data.")
 
-            element_id = element.get("id")
+        print("Geoapify response received successfully.")
 
-            if element_id in seen_ids:
-                continue
+    except requests.exceptions.Timeout as error:
 
-            seen_ids.add(element_id)
-
-            tags = element.get("tags", {})
-
-            name = tags.get("name")
-
-            # Skip places that do not have a readable name
-            if not name:
-                continue
-
-            # Nodes contain direct coordinates.
-            # Ways generally contain a center coordinate.
-            latitude = element.get("lat")
-            longitude = element.get("lon")
-
-            if latitude is None or longitude is None:
-
-                center = element.get("center", {})
-
-                latitude = center.get("lat")
-                longitude = center.get("lon")
-
-            if latitude is None or longitude is None:
-                continue
-
-            latitude = float(latitude)
-            longitude = float(longitude)
-
-            amenity = tags.get("amenity", "")
-            shop = tags.get("shop", "")
-
-            if amenity == "restaurant":
-                category = "Restaurant"
-
-            elif amenity == "cafe":
-                category = "Café"
-
-            elif amenity == "fast_food":
-                category = "Fast Food"
-
-            elif shop == "supermarket":
-                category = "Supermarket"
-
-            elif shop == "mall":
-                category = "Shopping Mall"
-
-            elif shop == "convenience":
-                category = "Convenience Store"
-
-            else:
-                category = "Nearby Place"
-
-            address_parts = [
-                tags.get("addr:street"),
-                tags.get("addr:city"),
-                tags.get("addr:postcode")
-            ]
-
-            address = ", ".join(
-                part for part in address_parts if part
-            )
-
-            # Calculate distance from the nearest selected charger
-            nearest_distance = None
-
-            for location in valid_locations:
-
-                charger_lat = location["latitude"]
-                charger_lon = location["longitude"]
-
-                from math import radians, sin, cos, sqrt, atan2
-
-                earth_radius = 6371
-
-                delta_lat = radians(latitude - charger_lat)
-                delta_lon = radians(longitude - charger_lon)
-
-                a = (
-                    sin(delta_lat / 2) ** 2
-                    + cos(radians(charger_lat))
-                    * cos(radians(latitude))
-                    * sin(delta_lon / 2) ** 2
-                )
-
-                c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-                distance = earth_radius * c
-
-                if (
-                    nearest_distance is None
-                    or distance < nearest_distance
-                ):
-                    nearest_distance = distance
-
-            places.append({
-                "name": name,
-                "category": category,
-                "address": address or "Address unavailable",
-                "latitude": latitude,
-                "longitude": longitude,
-                "distance_km": round(nearest_distance, 2)
-                    if nearest_distance is not None
-                    else None
-            })
-
-        # Sort nearest places first
-        places.sort(
-            key=lambda place: (
-                place["distance_km"]
-                if place["distance_km"] is not None
-                else float("inf")
-            )
-        )
-
-        # Limit response size
-        places = places[:40]
-
-        return jsonify({
-            "status": "success",
-            "count": len(places),
-            "places": places,
-            "attribution": "© OpenStreetMap contributors"
-        })
-
-    except requests.exceptions.Timeout:
+        print("Geoapify request timed out:", error)
 
         return jsonify({
             "status": "error",
-            "message": "Nearby place search timed out."
+            "message": "Nearby cafe search timed out."
         }), 504
 
-    except (
-        requests.exceptions.RequestException,
-        ValueError
-    ) as error:
+    except requests.exceptions.RequestException as error:
 
-        print("Nearby places API error:", error)
+        print("Geoapify API error:", error)
 
         return jsonify({
             "status": "error",
-            "message": "Unable to retrieve nearby places."
+            "message": "Unable to retrieve nearby cafes."
         }), 502
 
+    except ValueError as error:
+
+        print("Geoapify response error:", error)
+
+        return jsonify({
+            "status": "error",
+            "message": "Invalid response from places service."
+        }), 502
+
+    # Process Geoapify results
+    places = []
+    seen_ids = set()
+
+    for feature in features:
+
+        properties = feature.get("properties", {})
+
+        # Get unique place ID
+        place_id = properties.get("place_id")
+
+        if place_id and place_id in seen_ids:
+            continue
+
+        if place_id:
+            seen_ids.add(place_id)
+
+        name = properties.get("name")
+
+        if not name:
+            continue
+
+        # Get coordinates
+        place_lat = properties.get("lat")
+        place_lon = properties.get("lon")
+
+        if place_lat is None or place_lon is None:
+
+            coordinates = (
+                feature.get("geometry", {})
+                .get("coordinates", [])
+            )
+
+            if len(coordinates) >= 2:
+                place_lon = coordinates[0]
+                place_lat = coordinates[1]
+
+        if place_lat is None or place_lon is None:
+            continue
+
+        try:
+            place_lat = float(place_lat)
+            place_lon = float(place_lon)
+        except (TypeError, ValueError):
+            continue
+
+        # Calculate distance from charging station
+        earth_radius = 6371
+
+        delta_lat = radians(place_lat - latitude)
+        delta_lon = radians(place_lon - longitude)
+
+        a = (
+            sin(delta_lat / 2) ** 2
+            + cos(radians(latitude))
+            * cos(radians(place_lat))
+            * sin(delta_lon / 2) ** 2
+        )
+
+        a = min(1, max(0, a))
+
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        distance = earth_radius * c
+
+        # Get formatted address
+        address = (
+            properties.get("formatted")
+            or properties.get("address_line1")
+            or properties.get("address_line2")
+            or "Address unavailable"
+        )
+
+        places.append({
+            "name": name,
+            "category": "Café",
+            "address": address,
+            "latitude": place_lat,
+            "longitude": place_lon,
+            "distance_km": round(distance, 2)
+        })
+
+    # Sort by nearest distance
+    places.sort(
+        key=lambda place: place["distance_km"]
+    )
+
+    # Return maximum 20 places
+    places = places[:20]
+
+    print("Nearby cafes found:", len(places))
+
+    return jsonify({
+        "status": "success",
+        "count": len(places),
+        "places": places,
+        "attribution": "© OpenStreetMap contributors"
+    })
 
 # --------------------------------------------------
 # 9. Start Flask server
