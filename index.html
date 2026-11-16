@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Voltway helps EV drivers discover charging stations and plan smarter electric vehicle journeys.">
+
+    <title>Voltway | Power Your Journey</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet Map CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <!-- Website CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ================= NAVIGATION ================= -->
+
+    <header class="navbar">
+
+        <a href="#home" class="logo">
+            VOLT<span>WAY</span>
+        </a>
+
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#find-chargers">Find Chargers</a>
+            <a href="#plan-trip">Plan a Trip</a>
+        </nav>
+
+        <div class="nav-actions">
+
+            <button type="button" id="theme-toggle" class="theme-toggle"
+                    aria-label="Switch to light mode">
+                ☀️ Light Mode
+            </button>
+
+            <a href="#find-chargers" class="btn btn-primary nav-cta">
+                EXPLORE
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <!-- ================= HERO SECTION ================= -->
+
+        <section class="hero" id="home">
+
+            <div class="hero-content">
+
+                <div class="hero-tag">
+                    <span class="hero-dot"></span>
+                    YOUR NEXT CHARGE. YOUR NEXT ADVENTURE.
+                </div>
+
+                <h1>
+                    Charge Smart<br>
+                    Drive <span>Further</span>
+                </h1>
+
+                <p>
+                    Your journey deserves more than just a charging stop.
+                    Discover EV charging stations, explore locations, and
+                    plan your next electric adventure with Voltway.
+                </p>
+
+                <div class="hero-buttons">
+
+                    <a href="#find-chargers" class="btn btn-primary">
+                        Find Charging Stations →
+                    </a>
+
+                    <a href="#plan-trip" class="btn btn-secondary">
+                        Plan Your Journey
+                    </a>
+
+                </div>
+
+                <div class="hero-trust">
+
+                    <div>
+                        <strong>Smart</strong>
+                        <span>Station Discovery</span>
+                    </div>
+
+                    <div>
+                        <strong>Easy</strong>
+                        <span>Trip Planning</span>
+                    </div>
+
+                    <div>
+                        <strong>Live</strong>
+                        <span>Map Experience</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Hero Image -->
+
+            <div class="hero-image">
+
+                <img
+                    src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=1200&q=85"
+                    alt="Electric vehicle connected to a charging station"
+                >
+
+                <div class="hero-image-overlay">
+
+                    <span class="image-status-dot"></span>
+
+                    <div>
+                        <strong>Powering the Future</strong>
+                        <p>Move towards smarter mobility.</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= FEATURE HIGHLIGHTS ================= -->
+
+        <section class="features" id="features">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">WHY VOLTWAY?</span>
+
+                <h2>
+                    Everything you need for a
+                    <span>better EV journey.</span>
+                </h2>
+
+                <p class="section-subtitle">
+                    Simple tools designed to make electric vehicle travel
+                    easier, smarter, and more convenient.
+                </p>
+
+            </div>
+
+
+            <div class="feature-grid">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">📍</div>
+
+                    <h3>Discover Chargers</h3>
+
+                    <p>
+                        Find EV charging stations around your selected
+                        location using an interactive map.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">🗺️</div>
+
+                    <h3>Interactive Maps</h3>
+
+                    <p>
+                        Explore charging station locations and view
+                        individual station details on the map.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">⚡</div>
+
+                    <h3>Smart Trip Planning</h3>
+
+                    <p>
+                        Estimate your travel distance and charging
+                        requirements before starting your journey.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </section>
+
+<!-- ================= TRIP PLANNER ================= -->
+
+<section id="plan-trip" class="trip-experience">
+
+    <div class="section-heading">
+        <span class="eyebrow">YOUR JOURNEY, REIMAGINED</span>
+
+        <h2>
+            Plan your next
+            <span>electric adventure.</span>
+        </h2>
+
+        <p class="section-subtitle">
+            Map your route, discover charging stops, and find places
+            to recharge yourself while your EV recharges.
+        </p>
+    </div>
+
+    <div class="trip-dashboard">
+
+        <!-- MAP AREA -->
+        <div class="trip-map-panel">
+
+            <div class="trip-map-topbar">
+                <div>
+                    <span class="eyebrow">ROUTE EXPLORER</span>
+                    <h3>Your journey map</h3>
+                </div>
+
+                <span class="map-badge">
+                    <span class="hero-dot"></span>
+                    INTERACTIVE
+                </span>
+            </div>
+
+            <!-- Reuse existing Leaflet map -->
+            <div id="map" aria-label="Interactive trip route map"></div>
+
+            <div class="trip-map-legend">
+                <span><i class="legend-start"></i> Start</span>
+                <span><i class="legend-route"></i> Route</span>
+                <span><i class="legend-charger"></i> Chargers</span>
+                <span><i class="legend-place"></i> Nearby places</span>
+            </div>
+
+        </div>
+
+        <!-- TRIP CONTROL PANEL -->
+        <aside class="trip-control-panel">
+
+            <div class="trip-panel-heading">
+                <div class="trip-icon">⚡</div>
+
+                <div>
+                    <span class="eyebrow">TRIP CONFIGURATION</span>
+                    <h3>Where are we going?</h3>
+                </div>
+            </div>
+
+            <form id="trip-form">
+
+                <div class="form-group">
+                    <label for="start">Starting location</label>
+                    <input
+                        type="text"
+                        id="start"
+                        name="start"
+                        placeholder="e.g. Delhi"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="destination">Destination</label>
+                    <input
+                        type="text"
+                        id="destination"
+                        name="destination"
+                        placeholder="e.g. Jaipur"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="range">Vehicle driving range (km)</label>
+                    <input
+                        type="number"
+                        id="range"
+                        name="range"
+                        placeholder="e.g. 300"
+                        min="1"
+                        max="1500"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary trip-submit">
+                    Plan My Journey →
+                </button>
+
+            </form>
+
+            <div id="trip-result" aria-live="polite" aria-atomic="true">
+                <div class="trip-empty-state">
+                    <span>🗺️</span>
+                    <p>
+                        Your trip summary will appear here after
+                        calculating your journey.
+                    </p>
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- DIRECTIONS AND PLACES -->
+    <div class="trip-details-grid">
+
+        <section class="trip-detail-panel">
+            <div class="trip-detail-heading">
+                <span class="eyebrow">NAVIGATION</span>
+                <h3>Turn-by-turn directions</h3>
+                <p>Click any step to focus that part of your route.</p>
+            </div>
+
+            <div id="directions-list">
+                <div class="trip-empty-state">
+                    <span>🧭</span>
+                    <p>Your route directions will appear here.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="trip-detail-panel">
+            <div class="trip-detail-heading">
+                <span class="eyebrow">MAKE YOUR STOP WORTH IT</span>
+                <h3>Nearby places</h3>
+                <p>Food, cafés, and shopping near route chargers.</p>
+            </div>
+
+            <div id="nearby-places-list">
+                <div class="trip-empty-state">
+                    <span>☕</span>
+                    <p>Nearby recommendations will appear here.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <p class="trip-disclaimer">
+        Route, driving time, and charging-stop estimates are informational.
+        Place data may be incomplete or outdated. Always verify charger
+        availability, connector compatibility, opening hours, and road
+        conditions before travelling.
+    </p>
+
+</section>
+
+
+        <!-- ================= CHARGER FINDER ================= -->
+
+        <section id="find-chargers">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">CHARGING NETWORK</span>
+
+                <h2>
+                    Find your next
+                    <span>power stop.</span>
+                </h2>
+
+                <p class="section-subtitle">
+                    Search for EV charging stations by city and explore
+                    available locations through our interactive map.
+                </p>
+
+            </div>
+
+
+            <div class="charger-container">
+
+                <!-- Search Panel -->
+
+                <div class="panel station-panel">
+
+                    <h3>Explore Charging Stations</h3>
+
+                    <p class="section-subtitle">
+                        Enter a city to discover charging locations nearby.
+                    </p>
+
+                    <form id="charger-form">
+
+                        <div class="form-group">
+
+                            <label for="location">
+                                Enter City
+                            </label>
+
+                            <input
+                                type="text"
+                                id="location"
+                                name="location"
+                                placeholder="e.g. Delhi, Mumbai, Bengaluru"
+                                required
+                            >
+
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Search Chargers →
+                        </button>
+
+                    </form>
+
+
+                    <div id="search-message" aria-live="polite">
+                        Search for a city to explore charging stations.
+                    </div>
+
+
+                    <!-- Station Results -->
+
+                    <div class="station-results">
+
+                        <div class="station-results-heading">
+                            <h3>Charging Locations</h3>
+                            <span class="results-label">EXPLORE</span>
+                        </div>
+
+                        <!-- Station sorting and filtering -->
+                        <div class="station-controls">
+
+                            <div class="form-group">
+                                <label for="sort-stations">Sort by</label>
+
+                                <select id="sort-stations">
+                                    <option value="nearest">Nearest first</option>
+                                    <option value="power">Highest power</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="filter-connectors">Connector type</label>
+
+                                <select id="filter-connectors">
+                                    <option value="all">All connectors</option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div id="station-list" aria-live="polite">
+
+                            <div class="empty-state">
+
+                                <div class="empty-state-icon">⚡</div>
+
+                                <p>
+                                    Your charging stations will appear here
+                                    after you search for a city.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= CALL TO ACTION ================= -->
+
+        <section class="final-cta">
+
+            <div class="cta-content">
+
+                <span class="eyebrow">THE FUTURE IS ELECTRIC</span>
+
+                <h2>
+                    Make every journey
+                    <span>count.</span>
+                </h2>
+
+                <p>
+                    Discover charging locations and plan your next
+                    electric journey with Voltway.
+                </p>
+
+                <a href="#find-chargers" class="btn btn-primary">
+                    Start Exploring →
+                </a>
+
+            </div>
+
+            <div class="cta-decoration">
+                ⚡
+            </div>
+
+        </section>
+
+
+        <!-- ================= BACKEND STATUS ================= -->
+
+        <section class="system-section">
+
+            <div class="system-info">
+
+                <span class="eyebrow">SYSTEM INFORMATION</span>
+
+                <h3>Platform Status</h3>
+
+                <p>
+                    Check the connection status of the Voltway backend.
+                </p>
+
+                <div
+                    id="backend-status"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Checking backend connection...
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        <div class="footer-content">
+
+            <a href="#home" class="logo">
+                VOLT<span>WAY</span>
+            </a>
+
+            <p>
+                Powering smarter journeys. Driving a cleaner future.
+            </p>
+
+            <div class="footer-links">
+
+                <a href="#home">Home</a>
+
+                <a href="#find-chargers">Find Chargers</a>
+
+                <a href="#plan-trip">Plan a Trip</a>
+
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+
+            <p>
+                © 2026 Voltway. All rights reserved.
+            </p>
+
+            <p>
+                Built with ⚡ for smarter electric mobility.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <!-- ================= JAVASCRIPT ================= -->
+
+    <!-- Leaflet Map JavaScript -->
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <!-- Voltway JavaScript -->
+
+    <script src="script.js"></script>
+
+</body>
+</html>
